@@ -18,6 +18,12 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = cfg.DB.ResetChirps(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't reset chirps table")
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hits reset to 0 and database cleared"))
 }
