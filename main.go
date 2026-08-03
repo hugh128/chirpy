@@ -16,6 +16,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	DB             *database.Queries
+	platform       string
 }
 
 func main() {
@@ -29,6 +30,11 @@ func main() {
 		log.Fatal("DB_URL environment variable is not set")
 	}
 
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
+
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal("Error opening database connection:", err)
@@ -40,7 +46,8 @@ func main() {
 	const filepathRoot = "."
 	const port = "8080"
 	apiCfg := &apiConfig{
-		DB: dbQueries,
+		DB:       dbQueries,
+		platform: platform,
 	}
 
 	fileServerHandler := http.FileServer(http.Dir(filepathRoot))
@@ -51,6 +58,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("POST /api/validate_chirp", handlerChirpsValidate)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerUsersCreate)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
