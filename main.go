@@ -17,6 +17,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	DB             *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 func main() {
@@ -35,6 +36,11 @@ func main() {
 		log.Fatal("PLATFORM must be set")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal("Error opening database connection:", err)
@@ -46,8 +52,9 @@ func main() {
 	const filepathRoot = "."
 	const port = "8080"
 	apiCfg := &apiConfig{
-		DB:       dbQueries,
-		platform: platform,
+		DB:        dbQueries,
+		platform:  platform,
+		jwtSecret: jwtSecret,
 	}
 
 	fileServerHandler := http.FileServer(http.Dir(filepathRoot))
