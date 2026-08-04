@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -101,7 +102,6 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusBadRequest, "Invalid author ID format")
 			return
 		}
-
 		dbChirps, err = cfg.DB.GetChirpsForAuthor(r.Context(), authorID)
 	} else {
 		dbChirps, err = cfg.DB.GetChirps(r.Context())
@@ -120,6 +120,19 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: dbChirp.UpdatedAt,
 			Body:      dbChirp.Body,
 			UserID:    dbChirp.UserID,
+		})
+	}
+
+	sortOrder := r.URL.Query().Get("sort")
+	if sortOrder == "desc" {
+		slices.SortFunc(chirps, func(a, b Chirp) int {
+			if a.CreatedAt.Before(b.CreatedAt) {
+				return 1
+			}
+			if a.CreatedAt.After(b.CreatedAt) {
+				return -1
+			}
+			return 0
 		})
 	}
 
