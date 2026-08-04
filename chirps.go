@@ -18,7 +18,7 @@ type Chirp struct {
 	CreatedAt time.Time `json:"created_at:"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Body      string    `json:"body"`
-	UserId    uuid.UUID `json:"user_id"`
+	UserID    uuid.UUID `json:"user_id"`
 }
 
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		CreatedAt: dbChirp.CreatedAt,
 		UpdatedAt: dbChirp.UpdatedAt,
 		Body:      dbChirp.Body,
-		UserId:    dbChirp.UserID,
+		UserID:    dbChirp.UserID,
 	})
 }
 
@@ -90,7 +90,23 @@ func cleanProfanity(body string) string {
 }
 
 func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.DB.GetChirps(r.Context())
+	authorIDString := r.URL.Query().Get("author_id")
+
+	var dbChirps []database.Chirp
+	var err error
+
+	if authorIDString != "" {
+		authorID, parseErr := uuid.Parse(authorIDString)
+		if parseErr != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid author ID format")
+			return
+		}
+
+		dbChirps, err = cfg.DB.GetChirpsForAuthor(r.Context(), authorID)
+	} else {
+		dbChirps, err = cfg.DB.GetChirps(r.Context())
+	}
+
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps")
 		return
@@ -103,7 +119,7 @@ func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: dbChirp.CreatedAt,
 			UpdatedAt: dbChirp.UpdatedAt,
 			Body:      dbChirp.Body,
-			UserId:    dbChirp.UserID,
+			UserID:    dbChirp.UserID,
 		})
 	}
 
@@ -134,7 +150,7 @@ func (cfg *apiConfig) handlerChirpsGetByID(w http.ResponseWriter, r *http.Reques
 		CreatedAt: dbChirp.CreatedAt,
 		UpdatedAt: dbChirp.UpdatedAt,
 		Body:      dbChirp.Body,
-		UserId:    dbChirp.UserID,
+		UserID:    dbChirp.UserID,
 	})
 }
 
